@@ -1,13 +1,17 @@
 """Base model classes."""
 
 from datetime import datetime
-from typing import ClassVar
 
 from sqlmodel import Field, SQLModel
 
 
 class BaseModel(SQLModel):
     """Base model with common fields."""
+
+    model_config = {
+        "from_attributes": True,
+        "json_encoders": {datetime: lambda v: v.isoformat() if v else None},
+    }
 
     id: int | None = Field(default=None, primary_key=True, description="Primary key")
 
@@ -18,14 +22,6 @@ class BaseModel(SQLModel):
     updated_at: datetime | None = Field(
         default=None, description="Last update timestamp"
     )
-
-    class Config:
-        """Pydantic configuration."""
-
-        # 允许从 ORM 对象创建
-        from_attributes = True
-        # JSON 编码器
-        json_encoders: ClassVar = {datetime: lambda v: v.isoformat() if v else None}
 
 
 class TimestampMixin(SQLModel):

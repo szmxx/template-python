@@ -15,14 +15,11 @@ class UserBase(SQLModel):
     username: str = Field(
         min_length=3,
         max_length=50,
-        unique=True,
         index=True,
         description="Username (3-50 characters)",
     )
 
-    email: str = Field(
-        max_length=255, unique=True, index=True, description="Email address"
-    )
+    email: str = Field(max_length=255, index=True, description="Email address")
 
     full_name: str | None = Field(default=None, max_length=100, description="Full name")
 

@@ -138,7 +138,7 @@ async def upload_multiple_files(files: list[UploadFile] = File(...)) -> JSONResp
 
 
 @router.get("/download/{file_id}")
-async def download_file(file_id: str) -> FileResponse | JSONResponse:
+async def download_file(file_id: str):
     """下载文件。"""
     # 查找文件
     file_pattern = f"{file_id}.*"

@@ -45,16 +45,20 @@ def create_user(
     user: UserCreate, db: Session = Depends(get_db_session)
 ) -> JSONResponse:
     """Create a new user."""
-    # 检查用户名是否已存在
-    existing_user = db.exec(select(User).where(User.username == user.username)).first()
+    # 检查用户名是否已存在（只检查活跃用户）
+    existing_user = db.exec(
+        select(User).where(User.username == user.username, User.is_active)
+    ).first()
 
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Username already exists"
         )
 
-    # 检查邮箱是否已存在
-    existing_email = db.exec(select(User).where(User.email == user.email)).first()
+    # 检查邮箱是否已存在（只检查活跃用户）
+    existing_email = db.exec(
+        select(User).where(User.email == user.email, User.is_active)
+    ).first()
 
     if existing_email:
         raise HTTPException(
