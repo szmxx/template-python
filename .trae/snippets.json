@@ -1,0 +1,212 @@
+{
+  "python": {
+    "FastAPI Route": {
+      "prefix": "route",
+      "body": [
+        "@router.${1:get}('/${2:endpoint}')",
+        "async def ${3:function_name}(${4:params}) -> ${5:ResponseModel}:",
+        "    \"\"\"${6:Description}\"\"\"",
+        "    ${7:# Implementation}",
+        "    return ${8:response}"
+      ],
+      "description": "Create a FastAPI route"
+    },
+    "FastAPI Router": {
+      "prefix": "router",
+      "body": [
+        "from fastapi import APIRouter",
+        "",
+        "router = APIRouter(",
+        "    prefix='/${1:prefix}',",
+        "    tags=['${2:tag}']",
+        ")",
+        "",
+        "@router.${3:get}('/${4:endpoint}')",
+        "async def ${5:function_name}():",
+        "    \"\"\"${6:Description}\"\"\"",
+        "    return {\"message\": \"${7:Hello World}\"}"
+      ],
+      "description": "Create a FastAPI router"
+    },
+    "Pydantic Model": {
+      "prefix": "model",
+      "body": [
+        "from pydantic import BaseModel",
+        "from typing import Optional",
+        "",
+        "class ${1:ModelName}(BaseModel):",
+        "    ${2:field}: ${3:str}",
+        "    ${4:optional_field}: Optional[${5:str}] = None",
+        "",
+        "    class Config:",
+        "        from_attributes = True"
+      ],
+      "description": "Create a Pydantic model"
+    },
+    "SQLAlchemy Model": {
+      "prefix": "sqlmodel",
+      "body": [
+        "from sqlalchemy import Column, Integer, String",
+        "from src.models.base import Base",
+        "",
+        "class ${1:ModelName}(Base):",
+        "    __tablename__ = '${2:table_name}'",
+        "",
+        "    id = Column(Integer, primary_key=True, index=True)",
+        "    ${3:field} = Column(${4:String}, ${5:nullable=False})",
+        "",
+        "    def __repr__(self):",
+        "        return f\"<${1:ModelName}(id={self.id}, ${3:field}={self.${3:field}})>\""
+      ],
+      "description": "Create a SQLAlchemy model"
+    },
+    "Async Function": {
+      "prefix": "async",
+      "body": [
+        "async def ${1:function_name}(${2:params}) -> ${3:ReturnType}:",
+        "    \"\"\"${4:Description}\"\"\"",
+        "    ${5:# Implementation}",
+        "    return ${6:result}"
+      ],
+      "description": "Create an async function"
+    },
+    "Test Function": {
+      "prefix": "test",
+      "body": [
+        "@pytest.mark.${1:asyncio}",
+        "async def test_${2:function_name}(${3:fixtures}):",
+        "    \"\"\"${4:Test description}\"\"\"",
+        "    # Arrange",
+        "    ${5:# Setup test data}",
+        "",
+        "    # Act",
+        "    ${6:# Execute the function}",
+        "",
+        "    # Assert",
+        "    ${7:# Verify the results}"
+      ],
+      "description": "Create a test function"
+    },
+    "FastAPI Dependency": {
+      "prefix": "dependency",
+      "body": [
+        "from fastapi import Depends",
+        "from sqlalchemy.orm import Session",
+        "from src.db.connection import get_db",
+        "",
+        "async def ${1:dependency_name}(",
+        "    ${2:params},",
+        "    db: Session = Depends(get_db)",
+        ") -> ${3:ReturnType}:",
+        "    \"\"\"${4:Description}\"\"\"",
+        "    ${5:# Implementation}",
+        "    return ${6:result}"
+      ],
+      "description": "Create a FastAPI dependency"
+    },
+    "Exception Handler": {
+      "prefix": "exception",
+      "body": [
+        "from fastapi import HTTPException, status",
+        "",
+        "class ${1:CustomException}(HTTPException):",
+        "    def __init__(self, detail: str = \"${2:Default message}\"):",
+        "        super().__init__(",
+        "            status_code=status.HTTP_${3:400}_${4:BAD_REQUEST},",
+        "            detail=detail",
+        "        )"
+      ],
+      "description": "Create a custom exception"
+    },
+    "Database Session": {
+      "prefix": "dbsession",
+      "body": [
+        "from src.db.connection import Database",
+        "",
+        "async with Database().session() as db:",
+        "    ${1:# Database operations}",
+        "    ${2:result = db.query(Model).all()}",
+        "    ${3:# Session will be automatically closed}"
+      ],
+      "description": "Create a database session context"
+    },
+    "API Response": {
+      "prefix": "response",
+      "body": [
+        "from src.utils.response import create_response",
+        "",
+        "return create_response(",
+        "    data=${1:data},",
+        "    message=\"${2:Success message}\",",
+        "    status_code=${3:200}",
+        ")"
+      ],
+      "description": "Create an API response"
+    },
+    "Pagination": {
+      "prefix": "pagination",
+      "body": [
+        "from src.utils.pagination import paginate",
+        "from fastapi import Query",
+        "",
+        "async def ${1:get_items}(",
+        "    page: int = Query(1, ge=1),",
+        "    size: int = Query(10, ge=1, le=100),",
+        "    db: Session = Depends(get_db)",
+        "):",
+        "    query = db.query(${2:Model})",
+        "    return paginate(query, page=page, size=size)"
+      ],
+      "description": "Create pagination for API endpoint"
+    },
+    "Environment Variable": {
+      "prefix": "env",
+      "body": [
+        "import os",
+        "from typing import Optional",
+        "",
+        "${1:VARIABLE_NAME}: Optional[str] = os.getenv('${2:ENV_VAR_NAME}', '${3:default_value}')"
+      ],
+      "description": "Get environment variable"
+    },
+    "Logger Setup": {
+      "prefix": "logger",
+      "body": [
+        "import logging",
+        "",
+        "logger = logging.getLogger(__name__)",
+        "",
+        "logger.${1:info}('${2:Log message}')"
+      ],
+      "description": "Setup logger"
+    },
+    "Class with Init": {
+      "prefix": "class",
+      "body": [
+        "class ${1:ClassName}:",
+        "    \"\"\"${2:Class description}\"\"\"",
+        "",
+        "    def __init__(self, ${3:params}):",
+        "        ${4:self.attribute = params}",
+        "",
+        "    def ${5:method_name}(self, ${6:params}):",
+        "        \"\"\"${7:Method description}\"\"\"",
+        "        ${8:# Implementation}",
+        "        return ${9:result}"
+      ],
+      "description": "Create a class with constructor"
+    },
+    "Try Except": {
+      "prefix": "try",
+      "body": [
+        "try:",
+        "    ${1:# Code that might raise an exception}",
+        "except ${2:Exception} as e:",
+        "    ${3:# Handle exception}",
+        "    logger.error(f\"Error: {e}\")",
+        "    ${4:# Optional: re-raise or return error response}"
+      ],
+      "description": "Try-except block"
+    }
+  }
+}

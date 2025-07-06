@@ -1,0 +1,113 @@
+[project]
+name = "template-python"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115.14",
+    "sqlmodel>=0.0.24",
+    "uvicorn[standard]>=0.35.0",
+    "pydantic-settings>=2.0.0",
+    "psutil>=7.0.0",
+    "python-multipart>=0.0.6",
+]
+
+[dependency-groups]
+dev = [
+    "black>=25.1.0",
+    "httpx>=0.28.1",
+    "mypy>=1.16.1",
+    "pre-commit>=4.0.1",
+    "pytest>=8.4.1",
+    "pytest-asyncio>=1.0.0",
+    "ruff>=0.12.2",
+]
+
+# Black 配置
+[tool.black]
+line-length = 88
+target-version = ['py311']
+include = '\.pyi?$'
+extend-exclude = '''
+# A regex preceded by ^/ will apply only to files and directories
+# in the root of the project.
+(
+  ^/setup.py
+  | ^/build/
+  | ^/dist/
+)
+'''
+
+# Ruff 配置
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+# 启用推荐的规则集
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+    "ARG", # flake8-unused-arguments
+    "SIM", # flake8-simplify
+    "TCH", # flake8-type-checking
+    "PTH", # flake8-use-pathlib
+    "ERA", # eradicate
+    "PL",  # pylint
+    "TRY", # tryceratops
+    "RUF", # ruff-specific rules
+]
+ignore = [
+    "E501",   # line too long, handled by black
+    "B008",   # do not perform function calls in argument defaults
+    "C901",   # too complex
+    "W191",   # indentation contains tabs
+    "PLR0913", # too many arguments
+    "PLR0915", # too many statements
+    "PLR2004", # magic value used in comparison
+    "TRY003",  # avoid specifying long messages outside the exception class
+    "RUF003",  # allow ambiguous comma (fullwidth comma)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*" = ["PLR2004", "S101", "TID252"]
+"__init__.py" = ["F401"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["template-python"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+# MyPy 配置
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+show_error_codes = true
+show_column_numbers = true
+pretty = true
+
+# 忽略没有类型注解的第三方库
+[[tool.mypy.overrides]]
+module = "tests.*"
+ignore_errors = true

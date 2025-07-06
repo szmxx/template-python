@@ -1,0 +1,64 @@
+# Pre-commit 配置文件
+# 参考: https://pre-commit.com/
+
+repos:
+  # Ruff - 快速的 Python linter 和 formatter
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.12.2
+    hooks:
+      # Ruff linter
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+      # Ruff formatter
+      - id: ruff-format
+
+  # Black - Python 代码格式化器
+  - repo: https://github.com/psf/black
+    rev: 25.1.0
+    hooks:
+      - id: black
+        language_version: python3.11
+
+  # 通用钩子
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      # 检查文件是否以换行符结尾
+      - id: end-of-file-fixer
+      # 去除行尾空白字符
+      - id: trailing-whitespace
+      # 检查合并冲突标记
+      - id: check-merge-conflict
+      # 检查 YAML 文件语法
+      - id: check-yaml
+      # 检查 TOML 文件语法
+      - id: check-toml
+      # 检查 JSON 文件语法
+      - id: check-json
+      # 检查是否有大文件被添加
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      # 检查 Python 文件语法
+      - id: check-ast
+      # 检查文档字符串是否在第一行
+      - id: check-docstring-first
+      # 防止提交到主分支 (可选，开发时可注释掉)
+      # - id: no-commit-to-branch
+      #   args: ['--branch', 'main', '--branch', 'master']
+
+# 全局配置
+default_stages: [pre-commit]
+fail_fast: false
+
+# CI 配置
+ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] auto fixes from pre-commit.com hooks
+
+    for more information, see https://pre-commit.ci
+  autofix_prs: true
+  autoupdate_branch: ''
+  autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+  autoupdate_schedule: weekly
+  skip: []
+  submodules: false

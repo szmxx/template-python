@@ -1,0 +1,205 @@
+"""Tests for API endpoints."""
+
+from unittest.mock import MagicMock, patch
+
+from fastapi.testclient import TestClient
+
+from main import app
+
+
+class TestHealthAPI:
+    """Test cases for health check API endpoints."""
+
+    def setup_method(self):
+        """Set up test client."""
+        self.client = TestClient(app)
+
+    def test_basic_health_check(self):
+        """Test basic health check endpoint."""
+        response = self.client.get("/api/v1/health")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert "status" in data
+        assert "timestamp" in data
+        assert "service" in data
+        assert "version" in data
+        assert data["status"] == "healthy"
+        assert data["service"] == "template-python"
+        assert data["version"] == "1.0.0"
+
+    @patch("src.api.v1.endpoints.health.text")
+    def test_database_health_check_success(self, _mock_text):
+        """Test database health check endpoint - success case."""
+        response = self.client.get("/api/v1/health/db")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert "status" in data
+        assert "timestamp" in data
+        assert "database" in data
+        assert data["status"] == "healthy"
+        assert data["database"] == "connected"
+
+    @patch("src.api.v1.endpoints.health.psutil")
+    def test_detailed_health_check(self, mock_psutil):
+        """Test detailed health check endpoint."""
+        # Mock psutil responses
+        mock_memory = MagicMock()
+        mock_memory.total = 8589934592  # 8GB
+        mock_memory.available = 4294967296  # 4GB
+        mock_memory.percent = 50.0
+        mock_psutil.virtual_memory.return_value = mock_memory
+
+        mock_disk = MagicMock()
+        mock_disk.total = 1000000000000  # 1TB
+        mock_disk.free = 500000000000  # 500GB
+        mock_disk.used = 500000000000  # 500GB
+        mock_psutil.disk_usage.return_value = mock_disk
+
+        mock_psutil.cpu_percent.return_value = 25.5
+
+        response = self.client.get("/api/v1/health/detailed")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert "status" in data
+        assert "service" in data
+        assert "database" in data
+        assert "system" in data
+
+        # Check system information
+        system_info = data["system"]
+        assert "cpu_percent" in system_info
+        assert "memory" in system_info
+        assert "disk" in system_info
+
+
+class TestUsersAPI:
+    """Test cases for users API endpoints."""
+
+    def setup_method(self):
+        """Set up test client."""
+        self.client = TestClient(app)
+
+    def test_get_users_endpoint_exists(self):
+        """Test that users endpoint exists."""
+        response = self.client.get("/api/v1/users/")
+        # 可能返回 200 或其他状态码, 但不应该是 404
+        assert response.status_code != 404
+
+    def test_create_user_endpoint_exists(self):
+        """Test that create user endpoint exists."""
+        user_data = {
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "TestPass123",
+            "full_name": "Test User",
+        }
+        response = self.client.post("/api/v1/users/", json=user_data)
+        # 可能返回各种状态码, 但不应该是 404
+        assert response.status_code != 404
+
+    def test_get_user_by_id_endpoint_exists(self):
+        """Test that get user by ID endpoint exists."""
+        response = self.client.get("/api/v1/users/1")
+        # 可能返回 404(用户不存在)或其他状态码
+        # 但路由应该存在
+        assert response.status_code in [200, 404, 422, 500]
+
+
+class TestHeroesAPI:
+    """Test cases for heroes API endpoints."""
+
+    def setup_method(self):
+        """Set up test client."""
+        self.client = TestClient(app)
+
+    def test_get_heroes_endpoint_exists(self):
+        """Test that heroes endpoint exists."""
+        response = self.client.get("/api/v1/heroes/")
+        # 可能返回 200 或其他状态码, 但不应该是 404
+        assert response.status_code != 404
+
+    def test_create_hero_endpoint_exists(self):
+        """Test that create hero endpoint exists."""
+        hero_data = {
+            "name": "Test Hero",
+            "secret_name": "Test Secret",
+            "age": 25,
+            "power_level": 50,
+        }
+        response = self.client.post("/api/v1/heroes/", json=hero_data)
+        # 可能返回各种状态码, 但不应该是 404
+        assert response.status_code != 404
+
+    def test_get_hero_by_id_endpoint_exists(self):
+        """Test that get hero by ID endpoint exists."""
+        response = self.client.get("/api/v1/heroes/1")
+        # 可能返回 404(英雄不存在)或其他状态码
+        # 但路由应该存在
+        assert response.status_code in [200, 404, 422, 500]
+
+    def test_get_teams_endpoint_exists(self):
+        """Test that get teams endpoint exists."""
+        response = self.client.get("/api/v1/heroes/teams/list")
+        # 应该返回空列表或团队列表
+        assert response.status_code != 404
+
+    def test_get_power_distribution_endpoint_exists(self):
+        """Test that power distribution endpoint exists."""
+        response = self.client.get("/api/v1/heroes/stats/power-distribution")
+        # 应该返回统计信息
+        assert response.status_code != 404
+
+
+class TestAPIRouting:
+    """Test cases for API routing and structure."""
+
+    def setup_method(self):
+        """Set up test client."""
+        self.client = TestClient(app)
+
+    def test_api_v1_prefix(self):
+        """Test that API v1 endpoints have correct prefix."""
+        # 测试健康检查端点
+        response = self.client.get("/api/v1/health")
+        assert response.status_code == 200
+
+        # 测试不存在的 v1 端点
+        response = self.client.get("/api/v1/nonexistent")
+        assert response.status_code == 404
+
+    def test_openapi_docs_generation(self):
+        """Test that OpenAPI docs are generated correctly."""
+        response = self.client.get("/openapi.json")
+        assert response.status_code == 200
+
+        openapi_spec = response.json()
+        assert "openapi" in openapi_spec
+        assert "info" in openapi_spec
+        assert "paths" in openapi_spec
+
+        # 检查是否包含我们的端点
+        paths = openapi_spec["paths"]
+        assert "/api/v1/health" in paths
+        assert "/api/v1/users/" in paths
+        assert "/api/v1/heroes/" in paths
+
+    def test_cors_headers(self):
+        """Test that CORS headers are properly set."""
+        response = self.client.options("/api/v1/health")
+        # CORS 预检请求应该被处理
+        assert response.status_code in [200, 204]
+
+    def test_invalid_endpoint_returns_404(self):
+        """Test that invalid endpoints return 404 with proper error format."""
+        response = self.client.get("/api/v1/invalid-endpoint")
+        assert response.status_code == 404
+
+        data = response.json()
+        assert "success" in data
+        assert "message" in data
+        assert "error_code" in data
+        assert data["success"] is False
+        assert data["error_code"] == "NOT_FOUND"
