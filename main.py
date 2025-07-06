@@ -8,15 +8,16 @@ import uvicorn
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from src.api import api_router
 from src.db.config import DatabaseConfig
 from src.db.connection import db  # 使用简化的 db 实例
-from src.utils.logger import get_logger, setup_logger
-from src.utils.response import (
+from src.utils.api_response import (
     json_error_response,
     json_success_response,
 )
+from src.utils.logger import get_logger, setup_logger
 
 # 设置日志
 setup_logger()
@@ -142,6 +143,32 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
     return json_error_response(
         message=exc.detail,
         status_code=exc.status_code,
+    )
+
+
+@app.exception_handler(IntegrityError)
+async def integrity_error_handler(
+    request: Request, exc: IntegrityError
+) -> JSONResponse:
+    """数据完整性错误处理器。"""
+    logger.warning(f"🔒 数据完整性错误: {request.url} - {exc!s}")
+    return json_error_response(
+        message="数据冲突：该记录已存在或违反数据约束",
+        error_code="INTEGRITY_ERROR",
+        status_code=409,
+    )
+
+
+@app.exception_handler(SQLAlchemyError)
+async def sqlalchemy_error_handler(
+    request: Request, exc: SQLAlchemyError
+) -> JSONResponse:
+    """SQLAlchemy错误处理器。"""
+    logger.error(f"💾 数据库错误: {request.url} - {exc!s}")
+    return json_error_response(
+        message="数据库操作失败，请稍后重试",
+        error_code="DATABASE_ERROR",
+        status_code=500,
     )
 
 

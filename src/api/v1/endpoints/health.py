@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 from sqlmodel import Session, text
 
 from src.db import get_db_session
-from src.utils.response import json_success_response
+from src.utils.api_response import json_success_response
 
 router = APIRouter()
 

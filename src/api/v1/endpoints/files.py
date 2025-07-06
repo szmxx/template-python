@@ -7,7 +7,7 @@ from pathlib import Path
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
 from fastapi.responses import FileResponse, JSONResponse
 
-from src.utils.response import json_success_response
+from src.utils.api_response import json_success_response
 
 router = APIRouter()
 

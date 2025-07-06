@@ -6,9 +6,11 @@ from typing import cast
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import Session, func, select
 
-from src.db import get_db_session
+from src.db.connection import get_db_session
 from src.models.hero import Hero, HeroCreate, HeroListResponse, HeroResponse, HeroUpdate
 from src.utils.api_response import ApiResponse, MessageResponse
+from src.utils.db_error_handler import handle_db_errors
+from src.utils.logger import logger
 
 router = APIRouter()
 
@@ -16,32 +18,50 @@ router = APIRouter()
 @router.post(
     "/", response_model=ApiResponse[HeroResponse], status_code=status.HTTP_201_CREATED
 )
-async def create_hero(
-    hero_data: HeroCreate, db: Session = Depends(get_db_session)
+@handle_db_errors
+def create_hero(
+    hero: HeroCreate,
+    db: Session = Depends(get_db_session),
 ) -> ApiResponse[HeroResponse]:
-    """Create a new hero."""
-    # 检查英雄名称是否已存在
-    existing_hero = db.exec(select(Hero).where(Hero.name == hero_data.name)).first()
-    if existing_hero:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Hero name already exists"
+    """Create a new hero with proper error handling."""
+    try:
+        # 检查英雄名称是否已存在
+        existing_hero = db.exec(select(Hero).where(Hero.name == hero.name)).first()
+
+        if existing_hero:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Hero with name '{hero.name}' already exists",
+            )
+
+        hero_dict = hero.model_dump()
+
+        # 处理能力列表(转换为 JSON 字符串)
+        if hero_dict.get("abilities"):
+            hero_dict["abilities"] = json.dumps(hero_dict["abilities"])
+
+        new_hero = Hero(**hero_dict)
+
+        db.add(new_hero)
+        db.commit()
+        db.refresh(new_hero)
+
+        logger.info(f"英雄创建成功: {new_hero.name} (ID: {new_hero.id})")
+        return ApiResponse.success_response(
+            data=HeroResponse.model_validate(new_hero), message="英雄创建成功"
         )
 
-    # 创建新英雄
-    hero_dict = hero_data.model_dump()
-
-    # 处理能力列表(转换为 JSON 字符串)
-    if hero_dict.get("abilities"):
-        hero_dict["abilities"] = json.dumps(hero_dict["abilities"])
-
-    hero = Hero(**hero_dict)
-    db.add(hero)
-    db.commit()
-    db.refresh(hero)
-
-    return ApiResponse.success_response(
-        data=HeroResponse.model_validate(hero), message="英雄创建成功"
-    )
+    except HTTPException:
+        # 重新抛出业务逻辑异常
+        raise
+    except Exception as e:
+        # 记录详细错误信息并回滚
+        logger.error(f"创建英雄时发生错误: {e!s}", exc_info=True)
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="创建英雄失败，请稍后重试",
+        ) from e
 
 
 @router.get("/", response_model=ApiResponse[HeroListResponse])
@@ -145,62 +165,95 @@ async def get_hero_by_name(
 
 
 @router.put("/{hero_id}", response_model=ApiResponse[HeroResponse])
-async def update_hero(
-    hero_id: int, hero_data: HeroUpdate, db: Session = Depends(get_db_session)
+@handle_db_errors
+def update_hero(
+    hero_id: int,
+    hero_update: HeroUpdate,
+    db: Session = Depends(get_db_session),
 ) -> ApiResponse[HeroResponse]:
-    """Update a hero."""
-    hero = db.get(Hero, hero_id)
-    if not hero:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Hero not found"
-        )
+    """Update a hero with proper error handling."""
+    try:
+        hero = db.get(Hero, hero_id)
 
-    # 更新英雄数据
-    update_data = hero_data.model_dump(exclude_unset=True)
-
-    # 检查英雄名称唯一性
-    if "name" in update_data:
-        existing_hero = db.exec(
-            select(Hero).where(Hero.name == update_data["name"], Hero.id != hero_id)
-        ).first()
-        if existing_hero:
+        if not hero:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Hero name already exists",
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Hero with ID {hero_id} not found",
             )
 
-    # 处理能力列表
-    if update_data.get("abilities"):
-        update_data["abilities"] = json.dumps(update_data["abilities"])
+        # 更新英雄数据
+        update_data = hero_update.model_dump(exclude_unset=True)
 
-    # 应用更新
-    for field, value in update_data.items():
-        setattr(hero, field, value)
+        # 检查英雄名称唯一性
+        if "name" in update_data:
+            existing_hero = db.exec(
+                select(Hero).where(Hero.name == update_data["name"], Hero.id != hero_id)
+            ).first()
+            if existing_hero:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Hero name already exists",
+                )
 
-    db.add(hero)
-    db.commit()
-    db.refresh(hero)
+        # 处理能力列表
+        if update_data.get("abilities"):
+            update_data["abilities"] = json.dumps(update_data["abilities"])
 
-    return ApiResponse.success_response(
-        data=HeroResponse.model_validate(hero), message="英雄信息更新成功"
-    )
+        for field, value in update_data.items():
+            setattr(hero, field, value)
+
+        db.add(hero)
+        db.commit()
+        db.refresh(hero)
+
+        logger.info(f"英雄信息更新成功: {hero.name} (ID: {hero.id})")
+        return ApiResponse.success_response(
+            data=HeroResponse.model_validate(hero), message="英雄信息更新成功"
+        )
+
+    except HTTPException:
+        # 重新抛出业务逻辑异常
+        raise
+    except Exception as e:
+        # 记录详细错误信息并回滚
+        logger.error(f"更新英雄时发生错误: {e!s}", exc_info=True)
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="更新英雄失败，请稍后重试",
+        ) from e
 
 
 @router.delete("/{hero_id}", response_model=MessageResponse)
-async def delete_hero(
-    hero_id: int, db: Session = Depends(get_db_session)
-) -> MessageResponse:
-    """Delete a hero."""
-    hero = db.get(Hero, hero_id)
-    if not hero:
+@handle_db_errors
+def delete_hero(hero_id: int, db: Session = Depends(get_db_session)) -> MessageResponse:
+    """Delete a hero with proper error handling."""
+    try:
+        hero = db.get(Hero, hero_id)
+
+        if not hero:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Hero with ID {hero_id} not found",
+            )
+
+        db.delete(hero)
+        db.commit()
+
+        logger.info(f"英雄删除成功: {hero.name} (ID: {hero.id})")
+        return MessageResponse.success_message("英雄删除成功")
+
+    except HTTPException:
+        # 重新抛出业务逻辑异常
+        raise
+    except Exception as e:
+        # 记录详细错误信息并回滚
+        logger.error(f"删除英雄时发生错误: {e!s}", exc_info=True)
+        db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Hero not found"
-        )
-
-    db.delete(hero)
-    db.commit()
-
-    return MessageResponse.success_message("英雄删除成功")
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="删除英雄失败，请稍后重试",
+        ) from e
 
 
 @router.post("/{hero_id}/deactivate", response_model=ApiResponse[HeroResponse])

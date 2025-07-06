@@ -1,26 +1,27 @@
 from collections.abc import Generator
 from contextlib import contextmanager
+from typing import TYPE_CHECKING
 
-from sqlalchemy.engine import Engine
+from loguru import logger
+from sqlalchemy.exc import SQLAlchemyError
 from sqlmodel import Session, SQLModel, create_engine
+
+if TYPE_CHECKING:
+    from sqlalchemy.engine import Engine
 
 from .config import db_config
 
 
 class Database:
-    """简化的数据库管理器。"""
+    """数据库连接管理类。"""
 
-    def __init__(self):
-        self._engine: Engine | None = None
-
-    @property
-    def engine(self) -> Engine:
-        """获取数据库引擎实例。"""
-        if self._engine is None:
-            self._engine = create_engine(
-                db_config.database_url, **db_config.get_engine_kwargs()
-            )
-        return self._engine
+    def __init__(self) -> None:
+        """初始化数据库连接。"""
+        self.engine: Engine = create_engine(
+            db_config.database_url,
+            echo=db_config.db_echo,
+            pool_pre_ping=True,
+        )
 
     def create_tables(self) -> None:
         """创建所有数据库表。"""
@@ -43,7 +44,12 @@ class Database:
         try:
             yield session
             session.commit()
-        except Exception:
+        except SQLAlchemyError as e:
+            logger.error(f"数据库操作失败: {e!s}", exc_info=True)
+            session.rollback()
+            raise
+        except Exception as e:
+            logger.error(f"会话管理中发生未知错误: {e!s}", exc_info=True)
             session.rollback()
             raise
         finally:
@@ -57,8 +63,19 @@ class Database:
             def get_user(user_id: int, session: Session = Depends(db.get_session)):
                 return session.get(User, user_id)
         """
-        with self.session() as session:
+        session = Session(self.engine)
+        try:
             yield session
+        except SQLAlchemyError as e:
+            logger.error(f"数据库依赖注入会话失败: {e!s}", exc_info=True)
+            session.rollback()
+            raise
+        except Exception as e:
+            logger.error(f"依赖注入会话中发生未知错误: {e!s}", exc_info=True)
+            session.rollback()
+            raise
+        finally:
+            session.close()
 
 
 # 全局数据库实例

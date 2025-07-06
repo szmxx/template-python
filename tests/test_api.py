@@ -6,6 +6,10 @@ from fastapi.testclient import TestClient
 
 from main import app
 from src.db.connection import db
+from src.utils.logger import setup_logger
+
+# 确保测试环境中logger已初始化
+setup_logger()
 
 
 class TestHealthAPI:
