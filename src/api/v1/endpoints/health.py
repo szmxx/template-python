@@ -3,13 +3,13 @@
 import sys
 from datetime import datetime
 
-import psutil
+import psutil  # type: ignore
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from sqlmodel import Session, text
 
 from src.db import get_db_session
-from src.utils.response import success_response
+from src.utils.response import json_success_response
 
 router = APIRouter()
 
@@ -17,9 +17,14 @@ router = APIRouter()
 @router.get("/health")
 async def health_check() -> JSONResponse:
     """Basic health check endpoint."""
-    return success_response(
+    return json_success_response(
         message="Service is healthy",
-        data={"status": "healthy", "service": "template-python", "version": "1.0.0"},
+        data={
+            "status": "healthy",
+            "service": "template-python",
+            "version": "1.0.0",
+            "timestamp": datetime.utcnow().isoformat(),
+        },
     )
 
 
@@ -28,14 +33,14 @@ async def database_health_check(db: Session = Depends(get_db_session)) -> JSONRe
     """Database health check endpoint."""
     try:
         # 执行简单的数据库查询
-        result = db.exec(text("SELECT 1")).scalar()
+        result = db.exec(text("SELECT 1")).scalar()  # type: ignore
 
-        return success_response(
+        return json_success_response(
             message="Database is healthy",
             data={"status": "healthy", "database": "connected", "query_result": result},
         )
     except Exception as e:
-        return success_response(
+        return json_success_response(
             message="Database is unhealthy",
             data={"status": "unhealthy", "database": "disconnected", "error": str(e)},
         )
@@ -49,7 +54,7 @@ async def detailed_health_check(db: Session = Depends(get_db_session)) -> JSONRe
     db_status = "healthy"
     db_error = None
     try:
-        db.exec(text("SELECT 1")).scalar()
+        db.exec(text("SELECT 1")).scalar()  # type: ignore
     except Exception as e:
         db_status = "unhealthy"
         db_error = str(e)
@@ -58,7 +63,7 @@ async def detailed_health_check(db: Session = Depends(get_db_session)) -> JSONRe
     memory = psutil.virtual_memory()
     disk = psutil.disk_usage("/")
 
-    return success_response(
+    return json_success_response(
         message="Detailed health check completed",
         data={
             "status": "healthy" if db_status == "healthy" else "unhealthy",

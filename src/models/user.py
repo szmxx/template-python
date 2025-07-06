@@ -1,7 +1,6 @@
 """User models."""
 
 from datetime import datetime
-from typing import ClassVar
 
 from pydantic import field_validator
 from sqlmodel import Field, SQLModel
@@ -15,11 +14,14 @@ class UserBase(SQLModel):
     username: str = Field(
         min_length=3,
         max_length=50,
+        unique=True,
         index=True,
         description="Username (3-50 characters)",
     )
 
-    email: str = Field(max_length=255, index=True, description="Email address")
+    email: str = Field(
+        max_length=255, unique=True, index=True, description="Email address"
+    )
 
     full_name: str | None = Field(default=None, max_length=100, description="Full name")
 
@@ -125,8 +127,16 @@ class UserResponse(UserBase):
     last_login: datetime | None = None
     avatar_url: str | None = None
 
-    class Config:
-        """Pydantic configuration."""
+    model_config = {
+        "from_attributes": True,
+    }
 
-        from_attributes = True
-        json_encoders: ClassVar = {datetime: lambda v: v.isoformat() if v else None}
+    @classmethod
+    def model_dump_json_compatible(cls, obj):
+        """Convert model to JSON-compatible dict with proper datetime serialization."""
+        data = obj.model_dump()
+        # Convert datetime objects to ISO format strings
+        for key, value in data.items():
+            if isinstance(value, datetime):
+                data[key] = value.isoformat()
+        return data

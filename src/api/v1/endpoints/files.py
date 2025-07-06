@@ -7,7 +7,7 @@ from pathlib import Path
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
 from fastapi.responses import FileResponse, JSONResponse
 
-from src.utils.response import success_response
+from src.utils.response import json_success_response
 
 router = APIRouter()
 
@@ -96,7 +96,7 @@ async def upload_single_file(file: UploadFile = File(...)) -> JSONResponse:
     try:
         file_info = save_file(file)
 
-        return success_response(data=file_info, message="文件上传成功")
+        return json_success_response(data=file_info, message="文件上传成功")
     except HTTPException:
         # 重新抛出HTTPException，保持原有状态码
         raise
@@ -126,7 +126,7 @@ async def upload_multiple_files(files: list[UploadFile] = File(...)) -> JSONResp
         except Exception as e:
             failed_files.append({"filename": file.filename, "error": str(e)})
 
-    return success_response(
+    return json_success_response(
         data={
             "uploaded_files": uploaded_files,
             "failed_files": failed_files,
@@ -145,12 +145,12 @@ async def download_file(file_id: str):
     matching_files = list(UPLOAD_DIR.glob(file_pattern))
 
     if not matching_files:
-        return success_response(data=None, message="文件不存在")
+        return json_success_response(data=None, message="文件不存在")
 
     file_path = matching_files[0]
 
     if not file_path.exists():
-        return success_response(data=None, message="文件不存在")
+        return json_success_response(data=None, message="文件不存在")
 
     return FileResponse(
         path=file_path, filename=file_path.name, media_type="application/octet-stream"
@@ -165,13 +165,13 @@ async def delete_file(file_id: str) -> JSONResponse:
     matching_files = list(UPLOAD_DIR.glob(file_pattern))
 
     if not matching_files:
-        return success_response(data=None, message="文件不存在")
+        return json_success_response(data=None, message="文件不存在")
 
     file_path = matching_files[0]
 
     try:
         file_path.unlink()  # 删除文件
-        return success_response(
+        return json_success_response(
             data={"file_id": file_id, "deleted": True}, message="文件删除成功"
         )
     except Exception as e:
@@ -202,7 +202,7 @@ async def list_files() -> JSONResponse:
                 }
             )
 
-    return success_response(
+    return json_success_response(
         data={"files": files, "total_count": len(files)}, message="文件列表获取成功"
     )
 
@@ -215,7 +215,7 @@ async def get_file_info(file_id: str) -> JSONResponse:
     matching_files = list(UPLOAD_DIR.glob(file_pattern))
 
     if not matching_files:
-        return success_response(data=None, message="文件不存在")
+        return json_success_response(data=None, message="文件不存在")
 
     file_path = matching_files[0]
     stat = file_path.stat()
@@ -240,7 +240,7 @@ async def get_file_info(file_id: str) -> JSONResponse:
         "file_path": str(file_path),
     }
 
-    return success_response(data=file_info, message="文件信息获取成功")
+    return json_success_response(data=file_info, message="文件信息获取成功")
 
 
 @router.get("/stats")
@@ -260,7 +260,7 @@ async def get_upload_stats() -> JSONResponse:
             type_stats[file_type]["count"] += 1
             type_stats[file_type]["size"] += file_path.stat().st_size
 
-    return success_response(
+    return json_success_response(
         data={
             "total_files": total_files,
             "total_size": total_size,

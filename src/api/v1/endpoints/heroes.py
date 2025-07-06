@@ -7,12 +7,17 @@ from sqlmodel import Session, func, select
 
 from src.db import get_db_session
 from src.models.hero import Hero, HeroCreate, HeroListResponse, HeroResponse, HeroUpdate
+from src.utils.api_response import ApiResponse, MessageResponse
 
 router = APIRouter()
 
 
-@router.post("/", response_model=HeroResponse, status_code=status.HTTP_201_CREATED)
-async def create_hero(hero_data: HeroCreate, db: Session = Depends(get_db_session)):
+@router.post(
+    "/", response_model=ApiResponse[HeroResponse], status_code=status.HTTP_201_CREATED
+)
+async def create_hero(
+    hero_data: HeroCreate, db: Session = Depends(get_db_session)
+) -> ApiResponse[HeroResponse]:
     """Create a new hero."""
     # 检查英雄名称是否已存在
     existing_hero = db.exec(select(Hero).where(Hero.name == hero_data.name)).first()
@@ -33,10 +38,12 @@ async def create_hero(hero_data: HeroCreate, db: Session = Depends(get_db_sessio
     db.commit()
     db.refresh(hero)
 
-    return hero
+    return ApiResponse.success_response(
+        data=HeroResponse.model_validate(hero), message="英雄创建成功"
+    )
 
 
-@router.get("/", response_model=HeroListResponse)
+@router.get("/", response_model=ApiResponse[HeroListResponse])
 async def get_heroes(
     skip: int = Query(0, ge=0, description="Number of heroes to skip"),
     limit: int = Query(100, ge=1, le=1000, description="Number of heroes to return"),
@@ -98,37 +105,48 @@ async def get_heroes(
     pages = (total + limit - 1) // limit if total > 0 else 0
     current_page = (skip // limit) + 1
 
-    return HeroListResponse(
+    hero_list_response = HeroListResponse(
         heroes=heroes, total=total, page=current_page, size=limit, pages=pages
+    )
+    return ApiResponse.success_response(
+        data=hero_list_response, message="英雄列表获取成功"
     )
 
 
-@router.get("/{hero_id}", response_model=HeroResponse)
-async def get_hero(hero_id: int, db: Session = Depends(get_db_session)):
+@router.get("/{hero_id}", response_model=ApiResponse[HeroResponse])
+async def get_hero(
+    hero_id: int, db: Session = Depends(get_db_session)
+) -> ApiResponse[HeroResponse]:
     """Get a hero by ID."""
     hero = db.get(Hero, hero_id)
     if not hero:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Hero not found"
         )
-    return hero
+    return ApiResponse.success_response(
+        data=HeroResponse.model_validate(hero), message="英雄信息获取成功"
+    )
 
 
-@router.get("/name/{hero_name}", response_model=HeroResponse)
-async def get_hero_by_name(hero_name: str, db: Session = Depends(get_db_session)):
+@router.get("/name/{hero_name}", response_model=ApiResponse[HeroResponse])
+async def get_hero_by_name(
+    hero_name: str, db: Session = Depends(get_db_session)
+) -> ApiResponse[HeroResponse]:
     """Get a hero by name."""
     hero = db.exec(select(Hero).where(Hero.name.ilike(f"%{hero_name}%"))).first()
     if not hero:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Hero not found"
         )
-    return hero
+    return ApiResponse.success_response(
+        data=HeroResponse.model_validate(hero), message="英雄信息获取成功"
+    )
 
 
-@router.put("/{hero_id}", response_model=HeroResponse)
+@router.put("/{hero_id}", response_model=ApiResponse[HeroResponse])
 async def update_hero(
     hero_id: int, hero_data: HeroUpdate, db: Session = Depends(get_db_session)
-):
+) -> ApiResponse[HeroResponse]:
     """Update a hero."""
     hero = db.get(Hero, hero_id)
     if not hero:
@@ -162,11 +180,15 @@ async def update_hero(
     db.commit()
     db.refresh(hero)
 
-    return hero
+    return ApiResponse.success_response(
+        data=HeroResponse.model_validate(hero), message="英雄信息更新成功"
+    )
 
 
-@router.delete("/{hero_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_hero(hero_id: int, db: Session = Depends(get_db_session)):
+@router.delete("/{hero_id}", response_model=MessageResponse)
+async def delete_hero(
+    hero_id: int, db: Session = Depends(get_db_session)
+) -> MessageResponse:
     """Delete a hero."""
     hero = db.get(Hero, hero_id)
     if not hero:
@@ -177,9 +199,13 @@ async def delete_hero(hero_id: int, db: Session = Depends(get_db_session)):
     db.delete(hero)
     db.commit()
 
+    return MessageResponse.success_message("英雄删除成功")
 
-@router.post("/{hero_id}/deactivate", response_model=HeroResponse)
-async def deactivate_hero(hero_id: int, db: Session = Depends(get_db_session)):
+
+@router.post("/{hero_id}/deactivate", response_model=ApiResponse[HeroResponse])
+async def deactivate_hero(
+    hero_id: int, db: Session = Depends(get_db_session)
+) -> ApiResponse[HeroResponse]:
     """Deactivate a hero (soft delete)."""
     hero = db.get(Hero, hero_id)
     if not hero:
@@ -192,11 +218,15 @@ async def deactivate_hero(hero_id: int, db: Session = Depends(get_db_session)):
     db.commit()
     db.refresh(hero)
 
-    return hero
+    return ApiResponse.success_response(
+        data=HeroResponse.model_validate(hero), message="英雄已停用"
+    )
 
 
-@router.post("/{hero_id}/activate", response_model=HeroResponse)
-async def activate_hero(hero_id: int, db: Session = Depends(get_db_session)):
+@router.post("/{hero_id}/activate", response_model=ApiResponse[HeroResponse])
+async def activate_hero(
+    hero_id: int, db: Session = Depends(get_db_session)
+) -> ApiResponse[HeroResponse]:
     """Activate a hero."""
     hero = db.get(Hero, hero_id)
     if not hero:
@@ -209,21 +239,26 @@ async def activate_hero(hero_id: int, db: Session = Depends(get_db_session)):
     db.commit()
     db.refresh(hero)
 
-    return hero
+    return ApiResponse.success_response(
+        data=HeroResponse.model_validate(hero), message="英雄已激活"
+    )
 
 
-@router.get("/teams/list", response_model=list[str])
-async def get_teams(db: Session = Depends(get_db_session)):
+@router.get("/teams/list", response_model=ApiResponse[list[str]])
+async def get_teams(db: Session = Depends(get_db_session)) -> ApiResponse[list[str]]:
     """Get list of all teams."""
     teams = db.exec(
-        select(Hero.team).where(Hero.team.is_not(None), Hero.is_active).distinct()
+        select(Hero.team).where(Hero.team.isnot(None), Hero.is_active).distinct()
     ).all()
 
-    return [team for team in teams if team]
+    team_list = [team for team in teams if team]
+    return ApiResponse.success_response(data=team_list, message="团队列表获取成功")
 
 
-@router.get("/stats/power-distribution")
-async def get_power_distribution(db: Session = Depends(get_db_session)):
+@router.get("/stats/power-distribution", response_model=ApiResponse[dict])
+async def get_power_distribution(
+    db: Session = Depends(get_db_session),
+) -> ApiResponse[dict]:
     """Get hero power level distribution statistics."""
     # 获取功率级别分布
     power_stats = db.exec(
@@ -257,7 +292,7 @@ async def get_power_distribution(db: Session = Depends(get_db_session)):
             {"range": f"{min_power}-{max_power}", "label": label, "count": count}
         )
 
-    return {
+    power_distribution_data = {
         "statistics": {
             "min_power": power_stats.min_power,
             "max_power": power_stats.max_power,
@@ -268,3 +303,6 @@ async def get_power_distribution(db: Session = Depends(get_db_session)):
         },
         "distribution": distribution,
     }
+    return ApiResponse.success_response(
+        data=power_distribution_data, message="能力分布统计获取成功"
+    )

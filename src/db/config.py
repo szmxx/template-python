@@ -36,10 +36,11 @@ class DatabaseConfig(BaseSettings):
 
     debug: bool = Field(default=False, description="调试模式")
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = False
+    model_config = {
+        "env_file": ".env",
+        "env_file_encoding": "utf-8",
+        "case_sensitive": False,
+    }
 
     @property
     def is_sqlite(self) -> bool:

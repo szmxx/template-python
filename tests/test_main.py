@@ -22,11 +22,16 @@ class TestMainApp:
 
         data = response.json()
         assert "message" in data
-        assert "version" in data
-        assert "docs" in data
-        assert "redoc" in data
-        assert "health" in data
-        assert data["version"] == "1.0.0"
+        assert "data" in data
+        assert "success" in data
+        assert data["success"] is True
+
+        response_data = data["data"]
+        assert "version" in response_data
+        assert "docs" in response_data
+        assert "redoc" in response_data
+        assert "health" in response_data
+        assert response_data["version"] == "1.0.0"
 
     def test_docs_endpoint_accessible(self):
         """Test that docs endpoint is accessible."""
@@ -39,16 +44,21 @@ class TestMainApp:
         assert response.status_code == 200
 
     def test_health_endpoint(self):
-        """Test health check endpoint."""
+        """Test health endpoint returns correct format"""
         response = self.client.get("/api/v1/health")
         assert response.status_code == 200
 
         data = response.json()
-        assert "status" in data
-        assert "timestamp" in data
-        assert "service" in data
-        assert "version" in data
-        assert data["status"] == "healthy"
+        assert "success" in data
+        assert "data" in data
+        assert data["success"] is True
+
+        health_data = data["data"]
+        assert "status" in health_data
+        assert "timestamp" in health_data
+        assert "service" in health_data
+        assert "version" in health_data
+        assert health_data["status"] == "healthy"
 
     def test_not_found_endpoint(self):
         """Test 404 error handling."""

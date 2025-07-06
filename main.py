@@ -9,11 +9,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from src.api import api_router
+from src.db.config import DatabaseConfig
 from src.db.connection import db  # 使用简化的 db 实例
 from src.utils.response import (
-    error_response,
-    internal_server_error_response,
-    success_response,
+    json_error_response,
+    json_success_response,
 )
 
 
@@ -50,15 +50,21 @@ app.include_router(api_router, prefix="")
 @app.get("/")
 def read_root() -> JSONResponse:
     """根路径欢迎信息。"""
-    return success_response(
-        message="欢迎使用 FastAPI Template!", data={"docs": "/docs", "redoc": "/redoc"}
+    return json_success_response(
+        message="欢迎使用 FastAPI Template!",
+        data={
+            "version": "1.0.0",
+            "docs": "/docs",
+            "redoc": "/redoc",
+            "health": "/api/v1/health",
+        },
     )
 
 
 @app.exception_handler(404)  # type: ignore[misc]
 async def not_found_handler(_request: Request, _exc: HTTPException) -> JSONResponse:
     """404 错误处理器。"""
-    return error_response(
+    return json_error_response(
         message="请求的资源未找到", error_code="NOT_FOUND", status_code=404
     )
 
@@ -66,17 +72,29 @@ async def not_found_handler(_request: Request, _exc: HTTPException) -> JSONRespo
 @app.exception_handler(500)  # type: ignore[misc]
 async def internal_error_handler(_request: Request, _exc: Exception) -> JSONResponse:
     """500 错误处理器。"""
-    return internal_server_error_response(message="服务器内部错误")
+    return json_error_response(
+        message="服务器内部错误", error_code="INTERNAL_SERVER_ERROR", status_code=500
+    )
 
 
 def main() -> None:
     """应用入口点。"""
+    # 初始化数据库配置
+    db_config = DatabaseConfig()
+
+    print("Starting Template Python API...")
+    print(f"Database URL: {db_config.database_url}")
+
     try:
-        uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+        uvicorn.run(
+            "main:app", host="0.0.0.0", port=8000, reload=True, log_level="info"
+        )
     except KeyboardInterrupt:
         print("\n应用已停止")
+        raise
     except Exception as e:
         print(f"应用启动失败: {e}")
+        raise
 
 
 if __name__ == "__main__":

@@ -1,7 +1,6 @@
 """Hero models."""
 
 from datetime import datetime
-from typing import ClassVar
 
 from pydantic import field_validator
 from sqlmodel import Field, SQLModel
@@ -146,11 +145,10 @@ class HeroResponse(HeroBase):
     abilities: list[str] | None
     weakness: str | None
 
-    class Config:
-        """Pydantic configuration."""
-
-        from_attributes = True
-        json_encoders: ClassVar = {datetime: lambda v: v.isoformat() if v else None}
+    model_config = {
+        "from_attributes": True,
+        "json_encoders": {datetime: lambda v: v.isoformat() if v else None},
+    }
 
 
 class HeroListResponse(SQLModel):

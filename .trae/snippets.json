@@ -133,9 +133,9 @@
     "API Response": {
       "prefix": "response",
       "body": [
-        "from src.utils.response import create_response",
+        "from src.utils.response import json_success_response",
         "",
-        "return create_response(",
+        "return json_success_response(",
         "    data=${1:data},",
         "    message=\"${2:Success message}\",",
         "    status_code=${3:200}",
