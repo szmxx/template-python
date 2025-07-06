@@ -108,5 +108,9 @@ warn_unreachable = false
 strict_equality = false
 
 [[tool.mypy.overrides]]
-module = "*"
+module = "sqlmodel.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "sqlalchemy.*"
 ignore_errors = true

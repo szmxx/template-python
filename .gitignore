@@ -22,3 +22,65 @@ wheels/
 # 上传文件目录
 uploads/*
 !uploads/.gitkeep
+
+# IDE 和编辑器配置文件
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# 缓存目录
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.tox/
+.cache/
+
+# 日志文件
+*.log
+logs/
+
+# 临时文件
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# 系统文件
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+desktop.ini
+
+# 开发工具配置
+.trae/
+.pre-commit-config.yaml.bak
+
+# 测试覆盖率报告
+coverage.xml
+*.cover
+.hypothesis/
+
+# 文档生成
+docs/_build/
+site/
+
+# 密钥和证书文件
+*.pem
+*.key
+*.crt
+*.p12
+
+# 压缩文件
+*.zip
+*.tar.gz
+*.rar
+*.7z

@@ -1,6 +1,7 @@
 """Hero endpoints."""
 
 import json
+from typing import cast
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import Session, func, select
@@ -77,11 +78,11 @@ async def get_heroes(
     if search:
         search_term = f"%{search}%"
         query = query.where(
-            (Hero.name.ilike(search_term)) | (Hero.description.ilike(search_term))
+            (Hero.name.ilike(search_term)) | (Hero.description.ilike(search_term))  # type: ignore[attr-defined]
         )
 
     # 获取总数
-    total_query = select(func.count(Hero.id))
+    total_query = select(func.count(Hero.id))  # type: ignore[arg-type]
     if active_only:
         total_query = total_query.where(Hero.is_active)
     if team:
@@ -93,7 +94,7 @@ async def get_heroes(
     if search:
         search_term = f"%{search}%"
         total_query = total_query.where(
-            (Hero.name.ilike(search_term)) | (Hero.description.ilike(search_term))
+            (Hero.name.ilike(search_term)) | (Hero.description.ilike(search_term))  # type: ignore[attr-defined]
         )
 
     total = db.exec(total_query).first()
@@ -133,7 +134,7 @@ async def get_hero_by_name(
     hero_name: str, db: Session = Depends(get_db_session)
 ) -> ApiResponse[HeroResponse]:
     """Get a hero by name."""
-    hero = db.exec(select(Hero).where(Hero.name.ilike(f"%{hero_name}%"))).first()
+    hero = db.exec(select(Hero).where(Hero.name.ilike(f"%{hero_name}%"))).first()  # type: ignore[attr-defined]
     if not hero:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Hero not found"
@@ -248,7 +249,7 @@ async def activate_hero(
 async def get_teams(db: Session = Depends(get_db_session)) -> ApiResponse[list[str]]:
     """Get list of all teams."""
     teams = db.exec(
-        select(Hero.team).where(Hero.team.isnot(None), Hero.is_active).distinct()
+        select(Hero.team).where(Hero.team.isnot(None), Hero.is_active).distinct()  # type: ignore[attr-defined]
     ).all()
 
     team_list = [team for team in teams if team]
@@ -261,14 +262,20 @@ async def get_power_distribution(
 ) -> ApiResponse[dict]:
     """Get hero power level distribution statistics."""
     # 获取功率级别分布
-    power_stats = db.exec(
+    power_stats_result = db.exec(
         select(
             func.min(Hero.power_level).label("min_power"),
             func.max(Hero.power_level).label("max_power"),
             func.avg(Hero.power_level).label("avg_power"),
-            func.count(Hero.id).label("total_heroes"),
+            func.count(Hero.id).label("total_heroes"),  # type: ignore[arg-type]
         ).where(Hero.is_active)
     ).first()
+
+    # 解构元组结果
+    if power_stats_result:
+        min_power, max_power, avg_power, total_heroes = power_stats_result
+    else:
+        min_power, max_power, avg_power, total_heroes = 0, 0, 0, 0
 
     # 按功率级别范围分组
     power_ranges = [
@@ -279,27 +286,29 @@ async def get_power_distribution(
     ]
 
     distribution = []
-    for min_power, max_power, label in power_ranges:
-        count = db.exec(
-            select(func.count(Hero.id)).where(
-                Hero.power_level >= min_power,
-                Hero.power_level <= max_power,
+    for range_min, range_max, label in power_ranges:
+        hero_count = db.exec(
+            select(func.count(Hero.id)).where(  # type: ignore[arg-type]
+                Hero.power_level >= range_min,
+                Hero.power_level <= range_max,
                 Hero.is_active,
             )
         ).first()
 
         distribution.append(
-            {"range": f"{min_power}-{max_power}", "label": label, "count": count}
+            {
+                "range": f"{range_min}-{range_max}",
+                "label": label,
+                "count": cast("int", hero_count),
+            }
         )
 
     power_distribution_data = {
         "statistics": {
-            "min_power": power_stats.min_power,
-            "max_power": power_stats.max_power,
-            "avg_power": (
-                round(power_stats.avg_power, 2) if power_stats.avg_power else 0
-            ),
-            "total_heroes": power_stats.total_heroes,
+            "min_power": min_power,
+            "max_power": max_power,
+            "avg_power": (round(avg_power, 2) if avg_power else 0),
+            "total_heroes": total_heroes,
         },
         "distribution": distribution,
     }

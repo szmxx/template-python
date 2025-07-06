@@ -1,5 +1,7 @@
 """Database configuration."""
 
+from typing import Any
+
 from pydantic import Field
 from pydantic_settings import BaseSettings
 
@@ -57,9 +59,9 @@ class DatabaseConfig(BaseSettings):
         """检查是否使用 MySQL 数据库。"""
         return self.database_url.startswith("mysql")
 
-    def get_engine_kwargs(self) -> dict:
+    def get_engine_kwargs(self) -> dict[str, Any]:
         """获取引擎配置参数。"""
-        kwargs = {
+        kwargs: dict[str, Any] = {
             "echo": self.db_echo,
         }
 
