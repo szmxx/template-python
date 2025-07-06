@@ -11,6 +11,7 @@ dependencies = [
     "pydantic-settings>=2.0.0",
     "psutil>=7.0.0",
     "python-multipart>=0.0.6",
+    "loguru>=0.7.2",
 ]
 
 [dependency-groups]
@@ -24,93 +25,7 @@ dev = [
     "ruff>=0.12.2",
 ]
 
-# Black 配置
-[tool.black]
-line-length = 88
-target-version = ['py311']
-include = '\.pyi?$'
-extend-exclude = '''
-# A regex preceded by ^/ will apply only to files and directories
-# in the root of the project.
-(
-  ^/setup.py
-  | ^/build/
-  | ^/dist/
-)
-'''
-
-# Ruff 配置
-[tool.ruff]
-line-length = 88
-target-version = "py311"
-
-[tool.ruff.lint]
-# 启用推荐的规则集
-select = [
-    "E",   # pycodestyle errors
-    "W",   # pycodestyle warnings
-    "F",   # pyflakes
-    "I",   # isort
-    "B",   # flake8-bugbear
-    "C4",  # flake8-comprehensions
-    "UP",  # pyupgrade
-    "ARG", # flake8-unused-arguments
-    "SIM", # flake8-simplify
-    "TCH", # flake8-type-checking
-    "PTH", # flake8-use-pathlib
-    "ERA", # eradicate
-    "PL",  # pylint
-    "TRY", # tryceratops
-    "RUF", # ruff-specific rules
-]
-ignore = [
-    "E501",   # line too long, handled by black
-    "B008",   # do not perform function calls in argument defaults
-    "C901",   # too complex
-    "W191",   # indentation contains tabs
-    "PLR0913", # too many arguments
-    "PLR0915", # too many statements
-    "PLR2004", # magic value used in comparison
-    "TRY003",  # avoid specifying long messages outside the exception class
-    "RUF003",  # allow ambiguous comma (fullwidth comma)
-]
-
-[tool.ruff.lint.per-file-ignores]
-"tests/**/*" = ["PLR2004", "S101", "TID252"]
-"__init__.py" = ["F401"]
-
-[tool.ruff.lint.isort]
-known-first-party = ["template-python"]
-
-[tool.ruff.format]
-quote-style = "double"
-indent-style = "space"
-skip-magic-trailing-comma = false
-line-ending = "auto"
-
-# MyPy 配置
-[tool.mypy]
-python_version = "3.11"
-warn_return_any = false
-disallow_untyped_defs = false
-disallow_any_generics = false
-warn_unused_ignores = false
-disallow_untyped_decorators = false
-strict_optional = false
-warn_redundant_casts = false
-warn_unused_configs = false
-no_implicit_reexport = false
-check_untyped_defs = false
-disallow_subclassing_any = false
-disallow_incomplete_defs = false
-disallow_untyped_calls = false
-warn_unreachable = false
-strict_equality = false
-
-[[tool.mypy.overrides]]
-module = "sqlmodel.*"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "sqlalchemy.*"
-ignore_errors = true
+# 注意：工具配置已分离到独立文件
+# - Ruff: ruff.toml
+# - Black: pyproject.black.toml
+# - MyPy: mypy.ini

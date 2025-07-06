@@ -81,7 +81,7 @@ class TestFilesAPI:
             )
 
         assert response.status_code == 400
-        assert "不支持的文件类型" in response.json()["detail"]
+        assert "不支持的文件类型" in response.json()["message"]
 
     def test_upload_empty_filename(self):
         """测试上传空文件名。"""
@@ -110,7 +110,7 @@ class TestFilesAPI:
             )
 
         assert response.status_code == 413  # 应该返回413错误
-        assert "文件大小超过限制" in response.json()["detail"]
+        assert "文件大小超过限制" in response.json()["message"]
 
     def test_list_files(self):
         """测试获取文件列表。"""
@@ -251,4 +251,4 @@ class TestFilesAPI:
             response = self.client.post("/api/v1/files/upload/multiple", files=files)
 
         assert response.status_code == 400
-        assert "一次最多只能上传10个文件" in response.json()["detail"]
+        assert "一次最多只能上传10个文件" in response.json()["message"]

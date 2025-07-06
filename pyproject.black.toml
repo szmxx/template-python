@@ -1,0 +1,16 @@
+# Black 代码格式化工具配置文件
+# 更多配置选项请参考: https://black.readthedocs.io/en/stable/usage_and_configuration/the_basics.html
+
+[tool.black]
+line-length = 88
+target-version = ['py311']
+include = '\.pyi?$'
+extend-exclude = '''
+# A regex preceded by ^/ will apply only to files and directories
+# in the root of the project.
+(
+  ^/setup.py
+  | ^/build/
+  | ^/dist/
+)
+'''

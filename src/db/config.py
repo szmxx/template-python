@@ -38,6 +38,16 @@ class DatabaseConfig(BaseSettings):
 
     debug: bool = Field(default=False, description="调试模式")
 
+    # 日志配置
+    log_level: str = Field(default="INFO", description="日志级别")
+    log_file: str = Field(default="logs/app.log", description="日志文件路径")
+    log_to_console: bool = Field(default=True, description="是否输出到控制台")
+    log_to_file: bool = Field(default=True, description="是否输出到文件")
+    log_max_size: str = Field(default="10 MB", description="日志文件最大大小")
+    log_retention: str = Field(default="30 days", description="日志保留时间")
+    log_rotation: str = Field(default="1 day", description="日志轮转时间")
+    enable_serialize: bool = Field(default=False, description="是否启用序列化日志")
+
     model_config = {
         "env_file": ".env",
         "env_file_encoding": "utf-8",

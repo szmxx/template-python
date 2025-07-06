@@ -82,8 +82,8 @@ class TestMainFunction:
 
     @patch("main.uvicorn.run")
     @patch("main.DatabaseConfig")
-    @patch("builtins.print")
-    def test_main_function_call(self, mock_print, mock_db_config, mock_uvicorn_run):
+    @patch("main.logger")
+    def test_main_function_call(self, mock_logger, mock_db_config, mock_uvicorn_run):
         """Test that main function can be called without errors."""
         # Mock database config
         mock_config = MagicMock()
@@ -97,12 +97,18 @@ class TestMainFunction:
 
         # Verify that uvicorn.run was called
         mock_uvicorn_run.assert_called_once_with(
-            "main:app", host="0.0.0.0", port=8000, reload=True, log_level="info"
+            "main:app",
+            host="0.0.0.0",
+            port=8000,
+            reload=True,
+            log_level="warning",
+            access_log=False,
         )
 
-        # Verify print statements
-        mock_print.assert_any_call("Starting Template Python API...")
-        mock_print.assert_any_call(f"Database URL: {mock_config.database_url}")
+        # Verify logger statements
+        mock_logger.info.assert_any_call("🚀 启动 Template Python API...")
+        mock_logger.info.assert_any_call(f"📊 数据库 URL: {mock_config.database_url}")
+        mock_logger.info.assert_any_call(f"🐛 调试模式: {mock_config.debug}")
 
     @patch("main.uvicorn.run")
     @patch("main.DatabaseConfig")
@@ -112,7 +118,7 @@ class TestMainFunction:
         mock_config.database_url = "sqlite:///test.db"
         mock_db_config.return_value = mock_config
 
-        with patch("builtins.print"):
+        with patch("main.logger"):
             main()
 
         # Verify DatabaseConfig was instantiated
@@ -126,5 +132,5 @@ class TestMainFunction:
         mock_config.database_url = "sqlite:///test.db"
         mock_db_config.return_value = mock_config
 
-        with patch("builtins.print"), pytest.raises(KeyboardInterrupt):
+        with patch("main.logger"), pytest.raises(KeyboardInterrupt):
             main()

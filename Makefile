@@ -9,13 +9,13 @@ help: ## Show this help message
 
 .PHONY: format
 format: ## Format code with black and ruff
-	uv run black .
+	uv run black --config pyproject.black.toml .
 	uv run ruff format .
 	-uv run ruff check --fix .
 
 .PHONY: format-check
 format-check: ## Check code formatting without making changes
-	uv run black --check .
+	uv run black --config pyproject.black.toml --check .
 	uv run ruff format --check .
 	uv run ruff check .
 
@@ -118,3 +118,37 @@ dev: run ## Alias for run (development mode)
 start: ## Start the application using main.py
 	@echo "🚀 Starting application..."
 	uv run python main.py
+
+# Docker 命令
+.PHONY: docker-build docker-run docker-dev docker-stop docker-clean docker-logs
+
+docker-build:
+	@echo "🐳 构建 Docker 镜像..."
+	docker-compose -f docker/docker-compose.yml build
+
+docker-run:
+	@echo "🚀 启动生产环境容器..."
+	docker-compose -f docker/docker-compose.yml up -d
+
+docker-dev:
+	@echo "🛠️ 启动开发环境容器..."
+	docker-compose -f docker/docker-compose.dev.yml up -d
+
+docker-stop:
+	@echo "🛑 停止所有容器..."
+	docker-compose -f docker/docker-compose.yml down
+	docker-compose -f docker/docker-compose.dev.yml down
+
+docker-clean:
+	@echo "🧹 清理 Docker 资源..."
+	docker-compose -f docker/docker-compose.yml down -v --remove-orphans
+	docker-compose -f docker/docker-compose.dev.yml down -v --remove-orphans
+	docker system prune -f
+
+docker-logs:
+	@echo "📋 查看应用日志..."
+	docker-compose -f docker/docker-compose.yml logs -f app
+
+docker-logs-dev:
+	@echo "📋 查看开发环境日志..."
+	docker-compose -f docker/docker-compose.dev.yml logs -f app
