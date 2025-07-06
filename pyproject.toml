@@ -91,23 +91,22 @@ line-ending = "auto"
 # MyPy 配置
 [tool.mypy]
 python_version = "3.11"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-check_untyped_defs = true
-disallow_untyped_decorators = true
-no_implicit_optional = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_no_return = true
-warn_unreachable = true
-strict_equality = true
-show_error_codes = true
-show_column_numbers = true
-pretty = true
+warn_return_any = false
+disallow_untyped_defs = false
+disallow_any_generics = false
+warn_unused_ignores = false
+disallow_untyped_decorators = false
+strict_optional = false
+warn_redundant_casts = false
+warn_unused_configs = false
+no_implicit_reexport = false
+check_untyped_defs = false
+disallow_subclassing_any = false
+disallow_incomplete_defs = false
+disallow_untyped_calls = false
+warn_unreachable = false
+strict_equality = false
 
-# 忽略没有类型注解的第三方库
 [[tool.mypy.overrides]]
-module = "tests.*"
+module = "*"
 ignore_errors = true

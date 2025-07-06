@@ -5,7 +5,7 @@ from datetime import datetime
 from pathlib import Path
 
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 
 from src.utils.response import success_response
 
@@ -68,7 +68,7 @@ def save_file(file: UploadFile) -> dict:
 
     # 生成唯一文件名
     file_id = str(uuid.uuid4())
-    ext = Path(file.filename).suffix.lower()
+    ext = Path(file.filename or "").suffix.lower()
     new_filename = f"{file_id}{ext}"
     file_path = UPLOAD_DIR / new_filename
 
@@ -78,18 +78,18 @@ def save_file(file: UploadFile) -> dict:
 
     return {
         "file_id": file_id,
-        "original_name": file.filename,
+        "original_name": file.filename or "",
         "filename": new_filename,
         "file_path": str(file_path),
         "file_size": len(content),
-        "file_type": get_file_type(file.filename),
+        "file_type": get_file_type(file.filename or ""),
         "content_type": file.content_type,
         "upload_time": datetime.utcnow().isoformat(),
     }
 
 
-@router.post("/upload", response_model=dict)
-async def upload_single_file(file: UploadFile = File(...)):
+@router.post("/upload")
+async def upload_single_file(file: UploadFile = File(...)) -> JSONResponse:
     """上传单个文件。"""
     validate_file(file)
 
@@ -107,8 +107,8 @@ async def upload_single_file(file: UploadFile = File(...)):
         ) from e
 
 
-@router.post("/upload/multiple", response_model=dict)
-async def upload_multiple_files(files: list[UploadFile] = File(...)):
+@router.post("/upload/multiple")
+async def upload_multiple_files(files: list[UploadFile] = File(...)) -> JSONResponse:
     """上传多个文件。"""
     if len(files) > 10:
         raise HTTPException(
@@ -138,7 +138,7 @@ async def upload_multiple_files(files: list[UploadFile] = File(...)):
 
 
 @router.get("/download/{file_id}")
-async def download_file(file_id: str):
+async def download_file(file_id: str) -> FileResponse | JSONResponse:
     """下载文件。"""
     # 查找文件
     file_pattern = f"{file_id}.*"
@@ -157,8 +157,8 @@ async def download_file(file_id: str):
     )
 
 
-@router.delete("/delete/{file_id}", response_model=dict)
-async def delete_file(file_id: str):
+@router.delete("/delete/{file_id}")
+async def delete_file(file_id: str) -> JSONResponse:
     """删除文件。"""
     # 查找文件
     file_pattern = f"{file_id}.*"
@@ -181,8 +181,8 @@ async def delete_file(file_id: str):
         ) from e
 
 
-@router.get("/list", response_model=dict)
-async def list_files():
+@router.get("/list")
+async def list_files() -> JSONResponse:
     """获取已上传文件列表。"""
     files = []
 
@@ -207,8 +207,8 @@ async def list_files():
     )
 
 
-@router.get("/info/{file_id}", response_model=dict)
-async def get_file_info(file_id: str):
+@router.get("/info/{file_id}")
+async def get_file_info(file_id: str) -> JSONResponse:
     """获取文件信息。"""
     # 查找文件
     file_pattern = f"{file_id}.*"
@@ -243,8 +243,8 @@ async def get_file_info(file_id: str):
     return success_response(data=file_info, message="文件信息获取成功")
 
 
-@router.get("/stats", response_model=dict)
-async def get_upload_stats():
+@router.get("/stats")
+async def get_upload_stats() -> JSONResponse:
     """获取上传统计信息。"""
     files = list(UPLOAD_DIR.iterdir())
     total_files = len([f for f in files if f.is_file()])

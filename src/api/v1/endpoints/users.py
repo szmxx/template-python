@@ -1,10 +1,11 @@
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import JSONResponse
 from sqlmodel import Session, select
 
 from src.db.connection import get_db_session
-from src.models import User, UserCreate, UserLogin, UserResponse, UserUpdate
+from src.models.user import User, UserCreate, UserLogin, UserResponse, UserUpdate
 from src.utils.pagination import PaginationParams, paginate_query
 from src.utils.response import success_response
 from src.utils.security import (
@@ -15,10 +16,10 @@ from src.utils.security import (
 router = APIRouter()
 
 
-@router.get("/", response_model=dict)
+@router.get("/")
 def get_users(
     pagination: PaginationParams = Depends(), db: Session = Depends(get_db_session)
-):
+) -> JSONResponse:
     """Get all users with pagination."""
     query = select(User).where(User.is_active)
     result = paginate_query(db, query, pagination)
@@ -39,13 +40,13 @@ def get_users(
     )
 
 
-@router.post("/", response_model=dict, status_code=status.HTTP_201_CREATED)
-def create_user(user_data: UserCreate, db: Session = Depends(get_db_session)):
+@router.post("/", status_code=status.HTTP_201_CREATED)
+def create_user(
+    user: UserCreate, db: Session = Depends(get_db_session)
+) -> JSONResponse:
     """Create a new user."""
     # 检查用户名是否已存在
-    existing_user = db.exec(
-        select(User).where(User.username == user_data.username)
-    ).first()
+    existing_user = db.exec(select(User).where(User.username == user.username)).first()
 
     if existing_user:
         raise HTTPException(
@@ -53,7 +54,7 @@ def create_user(user_data: UserCreate, db: Session = Depends(get_db_session)):
         )
 
     # 检查邮箱是否已存在
-    existing_email = db.exec(select(User).where(User.email == user_data.email)).first()
+    existing_email = db.exec(select(User).where(User.email == user.email)).first()
 
     if existing_email:
         raise HTTPException(
@@ -61,27 +62,27 @@ def create_user(user_data: UserCreate, db: Session = Depends(get_db_session)):
         )
 
     # 验证密码格式
-    is_valid, issues = is_password_strong(user_data.password)
+    is_valid, issues = is_password_strong(user.password)
     if not is_valid:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Password validation failed: {', '.join(issues)}",
         )
 
-    user_dict = user_data.model_dump()
-    user = User(**user_dict)
+    user_dict = user.model_dump()
+    new_user = User(**user_dict)
 
-    db.add(user)
+    db.add(new_user)
     db.commit()
-    db.refresh(user)
+    db.refresh(new_user)
 
     return success_response(
-        data=UserResponse.model_validate(user), message="User created successfully"
+        data=UserResponse.model_validate(new_user), message="User created successfully"
     )
 
 
-@router.get("/{user_id}", response_model=dict)
-def get_user(user_id: int, db: Session = Depends(get_db_session)):
+@router.get("/{user_id}")
+def get_user(user_id: int, db: Session = Depends(get_db_session)) -> JSONResponse:
     """Get a user by ID."""
     user = db.get(User, user_id)
 
@@ -95,10 +96,10 @@ def get_user(user_id: int, db: Session = Depends(get_db_session)):
     )
 
 
-@router.put("/{user_id}", response_model=dict)
+@router.put("/{user_id}")
 def update_user(
-    user_id: int, user_data: UserUpdate, db: Session = Depends(get_db_session)
-) -> dict:
+    user_id: int, user_update: UserUpdate, db: Session = Depends(get_db_session)
+) -> JSONResponse:
     """Update a user."""
     user = db.get(User, user_id)
 
@@ -108,7 +109,7 @@ def update_user(
         )
 
     # 更新用户数据
-    update_data = user_data.model_dump(exclude_unset=True)
+    update_data = user_update.model_dump(exclude_unset=True)
 
     if "password" in update_data:
         is_valid, issues = is_password_strong(update_data["password"])
@@ -130,8 +131,8 @@ def update_user(
     )
 
 
-@router.delete("/{user_id}", response_model=dict)
-def delete_user(user_id: int, db: Session = Depends(get_db_session)) -> dict:
+@router.delete("/{user_id}")
+def delete_user(user_id: int, db: Session = Depends(get_db_session)) -> JSONResponse:
     """Delete a user (soft delete)."""
     user = db.get(User, user_id)
 
@@ -147,8 +148,10 @@ def delete_user(user_id: int, db: Session = Depends(get_db_session)) -> dict:
     return success_response(message="User deleted successfully")
 
 
-@router.post("/login", response_model=dict)
-def login_user(login_data: UserLogin, db: Session = Depends(get_db_session)) -> dict:
+@router.post("/login")
+def login_user(
+    login_data: UserLogin, db: Session = Depends(get_db_session)
+) -> JSONResponse:
     """Simple user login (development only)."""
     # 查找用户
     user = db.exec(

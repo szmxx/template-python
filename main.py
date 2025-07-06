@@ -55,7 +55,7 @@ def read_root() -> JSONResponse:
     )
 
 
-@app.exception_handler(404)
+@app.exception_handler(404)  # type: ignore[misc]
 async def not_found_handler(_request: Request, _exc: HTTPException) -> JSONResponse:
     """404 错误处理器。"""
     return error_response(
@@ -63,7 +63,7 @@ async def not_found_handler(_request: Request, _exc: HTTPException) -> JSONRespo
     )
 
 
-@app.exception_handler(500)
+@app.exception_handler(500)  # type: ignore[misc]
 async def internal_error_handler(_request: Request, _exc: Exception) -> JSONResponse:
     """500 错误处理器。"""
     return internal_server_error_response(message="服务器内部错误")
